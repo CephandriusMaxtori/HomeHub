@@ -1,9 +1,10 @@
 import { invoke } from '@tauri-apps/api/core';
-import { check, relaunch } from '@tauri-apps/plugin-updater';
+import { check } from '@tauri-apps/plugin-updater';
+import { relaunch } from '@tauri-apps/plugin-process';
 
 const App = {
   API_BASE: 'https://kalo-vercel.vercel.app',
-  CLIENT_SECRET: 'YOUR_KALO_SECRET_HERE',
+  CLIENT_SECRET: '0_zwtni4t-CUMDaFyPIdiKLypxi_UnijepbOjMS5l5a0EXS',
 
   config: {
     lat: null,
