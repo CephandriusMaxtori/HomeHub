@@ -5,16 +5,6 @@
   "windows": ["main"],
   "permissions": [
     "core:default",
-    "updater:default",
-    {
-      "identifier": "shell:allow-execute",
-      "allow": [
-        { "name": "vcgencmd", "cmd": "vcgencmd", "args": ["display_power", { "validator": "\\d+" }] },
-        { "name": "nmcli-scan", "cmd": "nmcli", "args": ["-t", "-f", "SSID,SIGNAL,SECURITY", "device", "wifi", "list"] },
-        { "name": "nmcli-connect", "cmd": "nmcli", "args": ["device", "wifi", "connect", { "validator": "\\S+" }, "password", { "validator": "\\S+" }] },
-        { "name": "nmcli-status", "cmd": "nmcli", "args": ["-t", "-f", "NAME,DEVICE", "connection", "show", "--active"] },
-        { "name": "nmcli-disconnect", "cmd": "nmcli", "args": ["connection", "down", { "validator": "\\S+" }] }
-      ]
-    }
+    "updater:default"
   ]
 }
