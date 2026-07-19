@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HomeHub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen font-sans antialiased">
+
+  <!-- Config Modal (first visit) -->
+  <div id="config-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div class="glass-card p-8 w-full max-w-md mx-4 animate-slide-in">
+      <h2 class="text-xl font-semibold mb-1 text-white">Welcome Home</h2>
+      <p class="text-gray-400 text-sm mb-5">Enter your town name to get started.</p>
+
+      <div class="relative mb-4">
+        <label for="town-input" class="block text-xs font-medium text-gray-400 mb-1 uppercase tracking-wider">Town</label>
+        <input id="town-input" type="text" readonly placeholder="Tap to enter town name..."
+          class="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all cursor-pointer">
+      </div>
+
+      <div id="geocode-results" class="hidden mb-4 max-h-40 overflow-y-auto custom-scrollbar"></div>
+      <div id="geocode-error" class="hidden mb-4 text-sm text-red-400"></div>
+
+      <div id="manual-coords" class="hidden mb-4 space-y-3">
+        <div>
+          <label for="config-lat" class="block text-xs font-medium text-gray-400 mb-1 uppercase tracking-wider">Latitude</label>
+          <input id="config-lat" type="number" step="any" placeholder="e.g. 40.7128"
+            class="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all">
+        </div>
+        <div>
+          <label for="config-lon" class="block text-xs font-medium text-gray-400 mb-1 uppercase tracking-wider">Longitude</label>
+          <input id="config-lon" type="number" step="any" placeholder="e.g. -74.006"
+            class="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all">
+        </div>
+        <button id="manual-save-btn" type="button"
+          class="w-full py-2.5 bg-indigo-500 hover:bg-indigo-600 rounded-lg text-white text-sm font-medium transition-colors">
+          Save Coordinates
+        </button>
+      </div>
+
+      <div id="selected-town" class="hidden mb-4 p-3 bg-white/5 rounded-lg border border-white/10">
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="text-xs text-gray-400">Selected:</span>
+            <div id="selected-town-name" class="text-white font-medium"></div>
+          </div>
+          <button id="selected-town-clear" class="text-gray-500 hover:text-red-400 text-xs transition-colors">Change</button>
+        </div>
+      </div>
+
+      <div class="mb-5">
+        <label for="config-units" class="block text-xs font-medium text-gray-400 mb-1 uppercase tracking-wider">Units</label>
+        <select id="config-units"
+          class="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all">
+          <option value="metric" class="bg-gray-900">Metric</option>
+          <option value="imperial" class="bg-gray-900">Imperial</option>
+        </select>
+      </div>
+
+      <button id="config-save-btn" type="button" disabled
+        class="w-full py-2.5 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-white font-medium transition-colors">
+        Save &amp; Continue
+      </button>
+    </div>
+  </div>
+
+  <!-- On-screen Keyboard -->
+  <div id="osk" class="fixed bottom-0 left-0 right-0 z-40 hidden">
+    <div class="glass-card rounded-t-2xl border-b-0 p-3 max-w-xl mx-auto">
+      <div id="osk-input-preview" class="text-center text-sm text-gray-400 mb-2 h-5"></div>
+      <div id="osk-keys" class="space-y-1.5">
+        <div class="flex justify-center gap-1" id="osk-row-1"></div>
+        <div class="flex justify-center gap-1" id="osk-row-2"></div>
+        <div class="flex justify-center gap-1" id="osk-row-3"></div>
+        <div class="flex justify-center gap-1" id="osk-row-4"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Dashboard -->
+  <div id="dashboard" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- Header -->
+    <header class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <div>
+        <h1 id="greeting" class="text-2xl sm:text-3xl font-semibold text-white"></h1>
+        <p id="date-display" class="text-gray-400 text-sm mt-0.5"></p>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-2 text-xs text-gray-400">
+          <span id="status-dot" class="w-2 h-2 rounded-full bg-gray-500 animate-pulse"></span>
+          <span id="status-text">Connecting</span>
+        </div>
+        <button id="screen-off-btn" class="text-xs text-gray-500 hover:text-gray-300 transition-colors px-2 py-1 rounded border border-white/5 hover:border-white/10" title="Turn off display">
+          Display Off
+        </button>
+        <div id="clock" class="font-mono text-lg sm:text-xl font-medium text-white tabular-nums"></div>
+      </div>
+    </header>
+
+    <!-- Update Banner (hidden by default) -->
+    <div id="update-banner" class="hidden glass-card p-4 animate-slide-in border-indigo-500/20">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="text-lg">🔄</span>
+          <div>
+            <div id="update-status" class="text-sm text-white font-medium">Update available</div>
+            <div id="update-detail" class="text-xs text-gray-400">A new version is ready to install.</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="update-dismiss" class="text-xs text-gray-500 hover:text-gray-300 transition-colors px-2 py-1">Later</button>
+          <button id="update-install" class="text-xs bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg transition-colors font-medium">Install &amp; Restart</button>
+        </div>
+      </div>
+      <div id="update-progress-wrap" class="hidden mt-3">
+        <div class="w-full bg-white/5 rounded-full h-1.5">
+          <div id="update-progress-bar" class="bg-indigo-500 h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+        <div id="update-progress-text" class="text-[10px] text-gray-500 mt-1 text-right">0%</div>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <!-- Weather Widget -->
+      <section id="weather-widget" class="glass-card p-6 animate-fade-in">
+        <div id="weather-loading" class="flex items-center justify-center h-48">
+          <div class="loading-spinner"></div>
+        </div>
+        <div id="weather-content" class="hidden">
+          <div class="flex items-start justify-between mb-4">
+            <div>
+              <div id="weather-temp" class="text-5xl font-light text-white"></div>
+              <div id="weather-condition" class="text-gray-400 text-sm mt-1"></div>
+              <div id="weather-feels" class="text-gray-500 text-xs mt-0.5"></div>
+            </div>
+            <div id="weather-icon" class="text-5xl"></div>
+          </div>
+          <div class="grid grid-cols-3 gap-3 mb-5 text-center text-xs">
+            <div class="bg-white/5 rounded-lg py-2 px-3">
+              <div class="text-gray-400 mb-0.5">Humidity</div>
+              <div id="weather-humidity" class="text-white font-medium"></div>
+            </div>
+            <div class="bg-white/5 rounded-lg py-2 px-3">
+              <div class="text-gray-400 mb-0.5">Wind</div>
+              <div id="weather-wind" class="text-white font-medium"></div>
+            </div>
+            <div class="bg-white/5 rounded-lg py-2 px-3">
+              <div class="text-gray-400 mb-0.5">AQI</div>
+              <div id="weather-aqi" class="text-white font-medium"></div>
+            </div>
+          </div>
+          <div id="weather-forecast" class="flex gap-2 overflow-x-auto pb-1"></div>
+        </div>
+        <div id="weather-error" class="hidden flex flex-col items-center justify-center h-48 text-center">
+          <div class="text-3xl mb-2">🌡️</div>
+          <p id="weather-error-msg" class="text-gray-400 text-sm"></p>
+          <button id="weather-retry" class="mt-3 text-xs text-indigo-400 hover:text-indigo-300 transition-colors">Retry</button>
+        </div>
+      </section>
+
+      <!-- System Monitor -->
+      <section class="glass-card p-6 animate-fade-in">
+        <h2 class="text-sm font-medium text-gray-400 uppercase tracking-wider mb-4">System Monitor</h2>
+        <div class="flex items-center justify-around">
+          <div class="flex flex-col items-center">
+            <div class="progress-ring-wrapper">
+              <svg class="progress-ring" viewBox="0 0 80 80">
+                <circle class="progress-ring-bg" cx="40" cy="40" r="34"></circle>
+                <circle id="cpu-ring" class="progress-ring-fill" cx="40" cy="40" r="34"></circle>
+              </svg>
+              <span id="cpu-value" class="progress-ring-text">0%</span>
+            </div>
+            <span class="text-xs text-gray-400 mt-2">CPU</span>
+          </div>
+          <div class="flex flex-col items-center">
+            <div class="progress-ring-wrapper">
+              <svg class="progress-ring" viewBox="0 0 80 80">
+                <circle class="progress-ring-bg" cx="40" cy="40" r="34"></circle>
+                <circle id="ram-ring" class="progress-ring-fill" cx="40" cy="40" r="34"></circle>
+              </svg>
+              <span id="ram-value" class="progress-ring-text">0%</span>
+            </div>
+            <span class="text-xs text-gray-400 mt-2">RAM</span>
+          </div>
+          <div class="flex flex-col items-center">
+            <div class="text-white text-lg font-mono font-medium" id="net-speed">--</div>
+            <span class="text-xs text-gray-400 mt-2">Network</span>
+            <span id="net-label" class="text-[10px] text-gray-500">Down / Up</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Quick Actions -->
+      <section class="glass-card p-6 animate-fade-in">
+        <h2 class="text-sm font-medium text-gray-400 uppercase tracking-wider mb-4">Quick Actions</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="actions-grid">
+          <button data-action="lights-off" class="action-btn group">
+            <span class="action-btn-icon">💡</span>
+            <span class="action-btn-label">All Lights Off</span>
+          </button>
+          <button data-action="movie-mode" class="action-btn group">
+            <span class="action-btn-icon">🎬</span>
+            <span class="action-btn-label">Movie Mode</span>
+          </button>
+          <button data-action="lock-doors" class="action-btn group">
+            <span class="action-btn-icon">🔒</span>
+            <span class="action-btn-label">Lock Doors</span>
+          </button>
+          <button data-action="climate-auto" class="action-btn group">
+            <span class="action-btn-icon">🌡️</span>
+            <span class="action-btn-label">Climate Auto</span>
+          </button>
+          <button data-action="morning" class="action-btn group">
+            <span class="action-btn-icon">☀️</span>
+            <span class="action-btn-label">Morning Routine</span>
+          </button>
+          <button data-action="night" class="action-btn group">
+            <span class="action-btn-icon">🌙</span>
+            <span class="action-btn-label">Night Mode</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Todo List -->
+      <section class="glass-card p-6 animate-fade-in">
+        <h2 class="text-sm font-medium text-gray-400 uppercase tracking-wider mb-4">Tasks</h2>
+        <form id="todo-form" class="flex gap-2 mb-4">
+          <input id="todo-input" type="text" placeholder="Add a task..."
+            class="flex-1 px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all">
+          <button type="submit" class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 rounded-lg text-white text-sm font-medium transition-colors shrink-0">Add</button>
+        </form>
+        <ul id="todo-list" class="space-y-1 max-h-64 overflow-y-auto custom-scrollbar"></ul>
+        <div id="todo-empty" class="text-center py-8 text-gray-500 text-sm">No tasks yet. Add one above.</div>
+      </section>
+
+    </div>
+
+    <!-- Footer / Quick Links -->
+    <footer class="glass-card p-4">
+      <div class="flex flex-wrap items-center justify-center gap-3">
+        <button id="settings-btn" class="link-pill">
+          <span>⚙️</span> Settings
+        </button>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div class="glass-card p-6 w-full max-w-lg mx-4 max-h-[85vh] overflow-y-auto custom-scrollbar animate-slide-in">
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="text-lg font-semibold text-white">Settings</h2>
+        <button id="settings-close" class="text-gray-400 hover:text-white transition-colors text-lg">&times;</button>
+      </div>
+
+      <!-- WiFi Section -->
+      <div class="mb-5">
+        <h3 class="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">WiFi</h3>
+        <div class="bg-white/5 rounded-xl p-4 border border-white/5">
+          <div class="flex items-center justify-between mb-3">
+            <span id="wifi-status" class="text-sm text-gray-300">Checking...</span>
+            <span id="wifi-status-dot" class="w-2 h-2 rounded-full bg-gray-500"></span>
+          </div>
+          <button id="wifi-scan-btn" class="w-full py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm text-gray-300 transition-colors border border-white/5">
+            Scan for Networks
+          </button>
+          <div id="wifi-networks" class="mt-3 space-y-1 hidden"></div>
+          <div id="wifi-password-section" class="hidden mt-3">
+            <label class="block text-xs text-gray-400 mb-1">Password</label>
+            <input id="wifi-password" type="password" placeholder="Enter password..."
+              class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all">
+            <div class="flex gap-2 mt-2">
+              <button id="wifi-connect-btn" class="flex-1 py-2 bg-indigo-500 hover:bg-indigo-600 rounded-lg text-sm text-white font-medium transition-colors">Connect</button>
+              <button id="wifi-cancel-btn" class="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm text-gray-300 transition-colors">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Display Schedule Section -->
+      <div class="mb-5">
+        <h3 class="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">Display Schedule</h3>
+        <div class="bg-white/5 rounded-xl p-4 border border-white/5">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm text-gray-300">Scheduled on/off</span>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input id="schedule-enabled" type="checkbox" class="sr-only peer">
+              <div class="w-9 h-5 bg-white/10 peer-focus:ring-2 peer-focus:ring-indigo-500/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-500"></div>
+            </label>
+          </div>
+          <div id="schedule-times" class="hidden grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Display ON at</label>
+              <input id="schedule-on" type="time" value="07:00"
+                class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-indigo-500/50 transition-all">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Display OFF at</label>
+              <input id="schedule-off" type="time" value="22:00"
+                class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-indigo-500/50 transition-all">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Location Section -->
+      <div>
+        <h3 class="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">Location</h3>
+        <div class="bg-white/5 rounded-xl p-4 border border-white/5">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-sm text-white" id="settings-town-name">Not set</div>
+              <div class="text-xs text-gray-500" id="settings-coords"></div>
+            </div>
+            <button id="settings-change-location" class="text-xs text-indigo-400 hover:text-indigo-300 transition-colors">Change</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>
